@@ -1,0 +1,39 @@
+# ──────────────────────────────────────────────────────────────────────────
+# Amazon Competitor Monitor — configuration
+# Add/remove groups and ASINs here. No code changes needed.
+# ──────────────────────────────────────────────────────────────────────────
+
+marketplace: US            # US | UK | DE | ...  (maps to amazon domain in src/scraper.py)
+language: en_US
+
+# One Slack digest is sent per group.
+groups:
+  - name: "Blotting Sheets"
+    my_asin: B086692GCS     # your own product — highlighted with a star in the report
+    asins:
+      - B0DQQGR9KR
+      - B0FQ21P4J2
+      - B0DBY7CJC8
+
+# Scraper behaviour
+scraper:
+  min_delay_sec: 4         # random delay between ASIN requests (min)
+  max_delay_sec: 9         # random delay between ASIN requests (max)
+  retries: 3               # attempts per ASIN before giving up
+  headless: true
+  timeout_ms: 30000
+  zip_code: "10001"        # US delivery zip — needed for non-US IPs to get buy-box prices
+
+# Storage
+google_sheet:
+  enabled: true
+  # Spreadsheet key (the long id in the sheet URL) OR full URL.
+  spreadsheet: "1xovMWNvj4cE5h0TekMvXDUoPOVShTbV7ngQmuyYNEmI"
+  worksheet: "history"
+
+# Slack
+slack:
+  # Channel is used only when SLACK_BOT_TOKEN is set (chat.postMessage).
+  # If you use an incoming webhook instead, the channel is fixed at webhook creation.
+  channel: "#price-monitor"
+  app_name: "Price Monitor"

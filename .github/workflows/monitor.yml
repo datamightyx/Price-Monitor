@@ -1,0 +1,40 @@
+name: amazon-monitor
+
+# Daily run. GitHub cron is in UTC and may start a few minutes late.
+# 07:00 UTC ≈ 09:00 in Moldova summer (EEST, UTC+3) / 10:00 there is 08:00 UTC.
+# Adjust the line below to your local time minus the UTC offset.
+on:
+  schedule:
+    - cron: "0 7 * * *"
+  workflow_dispatch: {}     # lets you trigger a run manually from the Actions tab
+
+concurrency:
+  group: amazon-monitor
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          python -m playwright install --with-deps chromium
+
+      - name: Run monitor
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          PROXY_SERVER: ${{ secrets.PROXY_SERVER }}
+          PROXY_USERNAME: ${{ secrets.PROXY_USERNAME }}
+          PROXY_PASSWORD: ${{ secrets.PROXY_PASSWORD }}
+        run: python -m src.main
