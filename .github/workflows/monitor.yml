@@ -1,11 +1,10 @@
 name: amazon-monitor
 
-# Daily run. GitHub cron is in UTC and may start a few minutes late.
-# 07:00 UTC ≈ 09:00 in Moldova summer (EEST, UTC+3) / 10:00 there is 08:00 UTC.
-# Adjust the line below to your local time minus the UTC offset.
+# Weekly run every Monday. GitHub cron is in UTC and may start a few minutes late.
+# 11:00 Moldova summer (EEST, UTC+3) = 08:00 UTC  →  cron: "0 8 * * 1"
 on:
-  #schedule:
-    #- cron: "35 8 * * *"
+  schedule:
+    - cron: "0 8 * * 1"
   workflow_dispatch: {}     # lets you trigger a run manually from the Actions tab
 
 concurrency:
@@ -34,7 +33,19 @@ jobs:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           PROXY_SERVER: ${{ secrets.PROXY_SERVER }}
           PROXY_USERNAME: ${{ secrets.PROXY_USERNAME }}
           PROXY_PASSWORD: ${{ secrets.PROXY_PASSWORD }}
         run: python -m src.main
+
+      - name: Upload PDF report as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: amazon-report-${{ github.run_id }}
+          path: amazon_report_*.pdf
+          retention-days: 30
+          if-no-files-found: ignore

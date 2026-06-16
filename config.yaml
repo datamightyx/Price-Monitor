@@ -9,18 +9,22 @@ language: en_US
 # One Slack digest is sent per group.
 groups:
   - name: "Blotting Sheets"
-    my_asin: B086692GCS     
-    asins:
+    my_asins:              # your own ASINs (one or more); listed first in the table with ★
+      - B086692GCS
+    asins:                 # competitor ASINs
       - B0DQQGR9KR
       - B0FQ21P4J2
       - B0DBY7CJC8
 
   - name: "Сast Covers"
-    my_asin: B078Q32FXQ     
+    my_asins:
+      - B078Q32FXQ
+      - B08J3ZRTLQ
+      - B0G4CMFZZS
     asins:
       - B0FMF5GRWG
       - B0FHPN39B6
-      - B0CC24BY3T    
+      - B0F3CWX3VS
 
 # Scraper behaviour
 scraper:
@@ -38,9 +42,23 @@ google_sheet:
   spreadsheet: "1xovMWNvj4cE5h0TekMvXDUoPOVShTbV7ngQmuyYNEmI"
   worksheet: "history"
 
+# Google Drive — PDF reports are uploaded here
+google_drive:
+  folder_id: "1yg8MG-ov2UOpMaWafzuwqcAMyUOFpyV4"   # folder ID from URL; service account must be added as Editor
+
+# Cloudflare R2 — primary PDF storage (free 10 GB/month)
+# Credentials go in GitHub Secrets: R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY
+# public_url: enable "Public access" on the bucket in Cloudflare dashboard → copy the r2.dev URL
+cloudflare_r2:
+  bucket: "price-monitor"
+  public_url: "https://pub-0e715b6faa6b4af18c397b3e86fb38b0.r2.dev"   # e.g. https://pub-abc123.r2.dev  (leave empty to skip public link)
+
 # Slack
 slack:
   # Channel is used only when SLACK_BOT_TOKEN is set (chat.postMessage).
   # If you use an incoming webhook instead, the channel is fixed at webhook creation.
   channel: "#price-monitor"
+  # channel_id is required for PDF file uploads (files API needs a real ID, not a name).
+  # Find it: right-click the channel in Slack → "View channel details" → copy the ID at the bottom (starts with C).
+  channel_id: "C0BADA3F9D1"
   app_name: "Price Monitor"

@@ -20,7 +20,7 @@ def demo_snapshots(cfg: Config) -> dict[str, list[Snapshot]]:
                  price=22.15, bsr=52, bsr_category="Grocery", rating=4.5, reviews=8230),
         Snapshot(asin="B077QK3NX4", group=group.name, product="Quest Nutrition Chocolate Chip Cookie",
                  price=24.99, bsr=187, bsr_category="Grocery", rating=4.3, reviews=23924,
-                 coupon="20% off", deal="-25%"),
+                 coupon="20% off", stp="-25%"),
     ]
     return {group.name: snaps}
 

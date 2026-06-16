@@ -23,14 +23,19 @@ DOMAINS = {
 @dataclass
 class Group:
     name: str
-    my_asin: str
+    my_asins: List[str]   # one or more "my" ASINs; first is the primary
     asins: List[str]
 
     @property
+    def my_asin(self) -> str:
+        """Primary my ASIN (first in list) — kept for backward compat."""
+        return self.my_asins[0] if self.my_asins else ""
+
+    @property
     def all_asins(self) -> List[str]:
-        """my_asin first, then competitors; de-duplicated, order preserved."""
+        """my_asins first, then competitors; de-duplicated, order preserved."""
         seen, out = set(), []
-        for a in [self.my_asin, *self.asins]:
+        for a in [*self.my_asins, *self.asins]:
             a = (a or "").strip()
             if a and a not in seen:
                 seen.add(a)
@@ -57,8 +62,20 @@ class SheetCfg:
 
 @dataclass
 class SlackCfg:
-    channel: str = "#amazon-monitor"
+    channel: str = "#amazon-monitor"   # channel name for chat.postMessage
+    channel_id: str = ""               # channel ID (C...) for file uploads — find it in Slack: right-click channel → View channel details
     app_name: str = "Amazon Monitor"
+
+
+@dataclass
+class DriveCfg:
+    folder_id: str = ""   # ID of the Drive folder to upload PDFs into (from URL); service account must have Editor access
+
+
+@dataclass
+class R2Cfg:
+    bucket: str = ""        # R2 bucket name
+    public_url: str = ""    # public bucket URL, e.g. https://pub-xxx.r2.dev
 
 
 @dataclass
@@ -69,6 +86,8 @@ class Config:
     scraper: ScraperCfg = field(default_factory=ScraperCfg)
     google_sheet: SheetCfg = field(default_factory=SheetCfg)
     slack: SlackCfg = field(default_factory=SlackCfg)
+    google_drive: DriveCfg = field(default_factory=DriveCfg)
+    cloudflare_r2: R2Cfg = field(default_factory=R2Cfg)
 
     @property
     def domain(self) -> str:
@@ -87,12 +106,19 @@ def load_config(path: str = "config.yaml") -> Config:
 
     groups = []
     for g in raw.get("groups", []):
-        if not g.get("name") or not g.get("my_asin"):
-            raise ValueError(f"Group missing 'name' or 'my_asin': {g}")
+        # Support both my_asins (list) and legacy my_asin (single string)
+        if g.get("my_asins"):
+            my_asins = [a.strip() for a in g["my_asins"] if a]
+        elif g.get("my_asin"):
+            my_asins = [g["my_asin"].strip()]
+        else:
+            raise ValueError(f"Group missing 'my_asins' (or 'my_asin'): {g}")
+        if not g.get("name"):
+            raise ValueError(f"Group missing 'name': {g}")
         groups.append(
             Group(
                 name=g["name"],
-                my_asin=g["my_asin"],
+                my_asins=my_asins,
                 asins=list(g.get("asins", [])),
             )
         )
@@ -106,6 +132,8 @@ def load_config(path: str = "config.yaml") -> Config:
         scraper=ScraperCfg(**(raw.get("scraper") or {})),
         google_sheet=SheetCfg(**(raw.get("google_sheet") or {})),
         slack=SlackCfg(**(raw.get("slack") or {})),
+        google_drive=DriveCfg(**(raw.get("google_drive") or {})),
+        cloudflare_r2=R2Cfg(**(raw.get("cloudflare_r2") or {})),
     )
     cfg.domain  # validate marketplace early
     return cfg

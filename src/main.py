@@ -57,27 +57,34 @@ def run(config_path: str, dry_run: bool, demo: bool) -> int:
 
     # 4. per-group diff + Slack digest
     groups = cfg.groups
+    all_changes: dict = {}
     for gi, group in enumerate(groups):
         snaps = results.get(group.name, [])
         if not snaps:
             continue
         changes = diff_group(snaps, baseline)
+        all_changes[group.name] = changes
         blocks = build_blocks(cfg, group, snaps, changes)
         fallback = f"{cfg.slack.app_name} — {group.name}: {len(changes)} changes ({today})"
         if dry_run or demo:
             print(f"\n===== {group.name} ({len(changes)} changes) =====")
             from .slack import render_table
-            print(render_table(snaps, group.my_asin))
+            print(render_table(snaps, group.my_asins))
             coupons = [(s.product or s.asin, s.coupon) for s in snaps if s.coupon and s.error is None]
             if coupons:
                 print("\nCoupons:")
                 for name, coupon in coupons:
                     print(f"  🎟️  {name} — {coupon}")
-            deals = [(s.product or s.asin, s.deal) for s in snaps if s.deal and s.error is None]
-            if deals:
-                print("\nActive Deals:")
-                for name, deal in deals:
-                    print(f"  🔥  {name} — {deal}")
+            stp_list = [(s.product or s.asin, s.stp) for s in snaps if s.stp and s.error is None]
+            if stp_list:
+                print("\nActive STP:")
+                for name, stp in stp_list:
+                    print(f"  🔥  {name} — {stp}")
+            ltd_list = [(s.product or s.asin, s.ltd) for s in snaps if s.ltd and s.error is None]
+            if ltd_list:
+                print("\nActive LTD:")
+                for name, ltd in ltd_list:
+                    print(f"  ⚡  {name} — {ltd}")
             if changes:
                 print("\nChanges:")
             for c in changes:
@@ -86,6 +93,15 @@ def run(config_path: str, dry_run: bool, demo: bool) -> int:
             send(cfg, blocks, fallback)
             if gi < len(groups) - 1:
                 send_separator(cfg)
+
+    # 5. PDF report — generated once across all groups
+    from .report import generate_pdf, send_pdf
+    try:
+        print("[report] generating PDF...")
+        pdf_bytes = generate_pdf(cfg, results, all_changes, today)
+        send_pdf(cfg, pdf_bytes, today)   # always saves to disk; uploads if token has files:write
+    except Exception as e:  # noqa: BLE001
+        print(f"[report] PDF failed (continuing): {e}")
 
     return 0
 

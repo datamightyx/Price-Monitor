@@ -12,6 +12,7 @@ FIELDNAMES = [
     "group",
     "asin",
     "product",
+    "brand",
     "price",
     "currency",
     "bsr",
@@ -21,8 +22,9 @@ FIELDNAMES = [
     "rating",
     "reviews",
     "coupon",
-    "deal",
     "in_stock",
+    "stp",
+    "ltd",
     "fetched_at",
 ]
 
@@ -32,6 +34,7 @@ class Snapshot:
     asin: str
     group: str = ""
     product: Optional[str] = None
+    brand: Optional[str] = None
     price: Optional[float] = None
     currency: str = "USD"
     bsr: Optional[int] = None
@@ -41,7 +44,8 @@ class Snapshot:
     rating: Optional[float] = None
     reviews: Optional[int] = None
     coupon: Optional[str] = None        # e.g. "20% off"
-    deal: Optional[str] = None          # e.g. "-25%" or "Limited time deal"
+    stp: Optional[str] = None           # strike-through price discount, e.g. "-25%"
+    ltd: Optional[str] = None           # limited time deal discount, e.g. "-27%"
     in_stock: bool = True
     error: Optional[str] = None         # set when scraping failed
     fetched_at: str = field(
@@ -60,6 +64,7 @@ class Snapshot:
             "group": self.group,
             "asin": self.asin,
             "product": self.product or "",
+            "brand": self.brand or "",
             "price": "" if self.price is None else self.price,
             "currency": self.currency,
             "bsr": "" if self.bsr is None else self.bsr,
@@ -69,7 +74,8 @@ class Snapshot:
             "rating": "" if self.rating is None else self.rating,
             "reviews": "" if self.reviews is None else self.reviews,
             "coupon": self.coupon or "",
-            "deal": self.deal or "",
+            "stp": self.stp or "",
+            "ltd": self.ltd or "",
             "in_stock": "yes" if self.in_stock else "no",
             "fetched_at": self.fetched_at,
         }
@@ -89,6 +95,7 @@ class Snapshot:
             asin=str(row.get("asin", "")).strip(),
             group=str(row.get("group", "")).strip(),
             product=(row.get("product") or None),
+            brand=(row.get("brand") or None),
             price=num(row.get("price"), float),
             currency=str(row.get("currency") or "USD"),
             bsr=num(row.get("bsr"), int),
@@ -98,7 +105,8 @@ class Snapshot:
             rating=num(row.get("rating"), float),
             reviews=num(row.get("reviews"), int),
             coupon=(row.get("coupon") or None),
-            deal=(row.get("deal") or None),
+            stp=(row.get("stp") or None),
+            ltd=(row.get("ltd") or None),
             in_stock=str(row.get("in_stock", "yes")).strip().lower() != "no",
             fetched_at=str(row.get("fetched_at") or ""),
         )

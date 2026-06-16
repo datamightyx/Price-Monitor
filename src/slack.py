@@ -28,10 +28,7 @@ def _cell(v) -> str:
 def _bsr_cell(s: Snapshot) -> str:
     if s.bsr is None:
         return "—"
-    primary = f"#{s.bsr:,}"
-    if s.bsr2 is not None:
-        return f"{primary} / #{s.bsr2:,}"
-    return primary
+    return f"#{s.bsr:,}"
 
 
 def _price(s: Snapshot) -> str:
@@ -41,21 +38,28 @@ def _price(s: Snapshot) -> str:
     return f"{sym}{s.price:g}"
 
 
-def render_table(snaps: list[Snapshot], my_asin: str) -> str:
-    headers = ["", "ASIN", "Product", "Price", "BSR", "Rating", "Reviews", "Coupon", "Deal"]
+def render_table(snaps: list[Snapshot], my_asins) -> str:
+    """Render a monospace table. my_asins can be a str or list[str]."""
+    if isinstance(my_asins, str):
+        my_asins = [my_asins]
+    my_set = set(my_asins)
+    headers = ["", "ASIN", "Product", "Brand", "Price", "BSR", "Rating", "Reviews", "Coupon", "In stock", "STP", "LTD"]
     rows = [headers]
     for s in snaps:
-        star = "*" if s.asin == my_asin else " "
+        star = "*" if s.asin in my_set else " "
         rows.append([
             star,
             s.asin,
             (s.product or "")[:26],
+            (s.brand or "")[:16],
             _price(s),
             _bsr_cell(s),
             f"{s.rating}★" if s.rating is not None else "—",
             f"{s.reviews:,}" if s.reviews is not None else "—",
             _cell(s.coupon),
-            _cell(s.deal),
+            "yes" if s.in_stock else "no",
+            _cell(s.stp),
+            _cell(s.ltd),
         ])
     widths = [max(len(str(r[i])) for r in rows) for i in range(len(headers))]
     lines = []
@@ -73,6 +77,13 @@ def _section(text: str) -> dict:
     return {"type": "section", "text": {"type": "mrkdwn", "text": text}}
 
 
+def _product_link(s: Snapshot, domain: str) -> str:
+    """Slack mrkdwn hyperlink: product name (or ASIN) pointing to the Amazon page."""
+    name = s.product or s.asin
+    url = f"https://{domain}/dp/{s.asin}?th=1"
+    return f"<{url}|{name}>"
+
+
 
 def build_blocks(cfg: Config, group: Group, snaps: list[Snapshot],
                  changes: list[Change]) -> list[dict]:
@@ -87,9 +98,10 @@ def build_blocks(cfg: Config, group: Group, snaps: list[Snapshot],
                  f"Comparing against yesterday's baseline."),
     ]
 
-    mine = next((s for s in snaps if s.asin == group.my_asin), None)
-    if mine:
-        parts = [f"*Your product:* {mine.asin} — {_price(mine)}"]
+    my_set = set(group.my_asins)
+    mines = [s for s in snaps if s.asin in my_set]
+    for mine in mines:
+        parts = [f"*★ My product:* {_product_link(mine, cfg.domain)} — {_price(mine)}"]
         if mine.bsr is not None:
             parts.append(f"BSR #{mine.bsr:,}")
         if mine.rating is not None:
@@ -107,7 +119,7 @@ def build_blocks(cfg: Config, group: Group, snaps: list[Snapshot],
     blocks.append(_section(f"*Changes:*\n{body}"))
 
     # Current snapshot table
-    table = render_table(snaps, group.my_asin)
+    table = render_table(snaps, group.my_asins)
     blocks.append(_section(f"*Current Snapshot:*\n```{table}```"))
 
     # Coupons — listed right below the table
@@ -118,17 +130,25 @@ def build_blocks(cfg: Config, group: Group, snaps: list[Snapshot],
     if coupon_lines:
         blocks.append(_section("*Coupons:*\n" + "\n".join(coupon_lines)))
 
-    # Active deals
-    deal_lines = [
-        f"🔥  {s.product or s.asin} — {s.deal}"
-        for s in snaps if s.deal and s.error is None
+    # Active STP (strike-through price discounts)
+    stp_lines = [
+        f"🔥  {s.product or s.asin} — {s.stp}"
+        for s in snaps if s.stp and s.error is None
     ]
-    if deal_lines:
-        blocks.append(_section("*Active Deals:*\n" + "\n".join(deal_lines)))
+    if stp_lines:
+        blocks.append(_section("*Active STP:*\n" + "\n".join(stp_lines)))
+
+    # Active LTD (limited time deals)
+    ltd_lines = [
+        f"⚡  {s.product or s.asin} — {s.ltd}"
+        for s in snaps if s.ltd and s.error is None
+    ]
+    if ltd_lines:
+        blocks.append(_section("*Active LTD:*\n" + "\n".join(ltd_lines)))
 
     # Notes
     in_stock = sum(1 for s in snaps if s.in_stock and s.error is None)
-    promo_count = sum(1 for s in snaps if s.deal or s.coupon)
+    promo_count = sum(1 for s in snaps if s.stp or s.ltd or s.coupon)
     failed = [s.asin for s in snaps if s.error is not None]
     notes = [f"• {in_stock}/{len(snaps)} products in stock",
              f"• {promo_count}/{len(snaps)} products have active promotions"]

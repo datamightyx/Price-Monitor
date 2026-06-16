@@ -11,7 +11,7 @@ from .models import Snapshot
 class Change:
     asin: str
     product: str
-    kind: str          # price | bsr | coupon | deal | launched | stock | rating
+    kind: str          # price | bsr | coupon | stp | launched | stock | rating
     text: str          # human-readable line for the Slack "Changes" section
     emoji: str = ""    # leading emoji
 
@@ -32,9 +32,21 @@ def diff_group(today: list[Snapshot], baseline: dict[str, Snapshot]) -> list[Cha
         # Newly tracked / launched
         if prev is None:
             if cur.error is None:
+                promos = []
+                if cur.coupon:
+                    pct = cur.coupon.lstrip("-\u2212").rstrip("%").strip()
+                    promos.append(f"a {pct}%-off coupon" if pct.isdigit() else f"a coupon ({cur.coupon})")
+                if cur.stp:
+                    pct = cur.stp.lstrip("-\u2212").rstrip("%").strip()
+                    art = "an" if pct.startswith("8") else "a"
+                    promos.append(f"{art} {pct}% STP")
+                if cur.ltd:
+                    pct = cur.ltd.lstrip("-\u2212").rstrip("%").strip()
+                    art = "an" if pct.startswith("8") else "a"
+                    promos.append(f"{art} {pct}% LTD")
+                promo_note = " — launched " + ", ".join(promos) if promos else ""
                 changes.append(Change(cur.asin, name, "launched",
-                                      f"*{name}* ({cur.asin}) — now tracked"
-                                      + (f" — launched a {cur.deal}" if cur.deal else ""),
+                                      f"*{name}* ({cur.asin}) — now tracked{promo_note}",
                                       "🚀"))
             continue
 
@@ -64,17 +76,29 @@ def diff_group(today: list[Snapshot], baseline: dict[str, Snapshot]) -> list[Cha
                 changes.append(Change(cur.asin, name, "coupon",
                                       f"*{name}* — coupon changed {prev.coupon} → {cur.coupon}", "🎟️"))
 
-        # Deal appeared / disappeared / changed
-        if (cur.deal or None) != (prev.deal or None):
-            if cur.deal and not prev.deal:
-                changes.append(Change(cur.asin, name, "deal",
-                                      f"*{name}* — new deal: {cur.deal}", "🔥"))
-            elif prev.deal and not cur.deal:
-                changes.append(Change(cur.asin, name, "deal",
-                                      f"*{name}* — deal ended ({prev.deal})", "🏁"))
+        # STP appeared / disappeared / changed
+        if (cur.stp or None) != (prev.stp or None):
+            if cur.stp and not prev.stp:
+                changes.append(Change(cur.asin, name, "stp",
+                                      f"*{name}* — new STP: {cur.stp}", "🔥"))
+            elif prev.stp and not cur.stp:
+                changes.append(Change(cur.asin, name, "stp",
+                                      f"*{name}* — STP ended ({prev.stp})", "🏁"))
             else:
-                changes.append(Change(cur.asin, name, "deal",
-                                      f"*{name}* — deal changed {prev.deal} → {cur.deal}", "🔥"))
+                changes.append(Change(cur.asin, name, "stp",
+                                      f"*{name}* — STP changed {prev.stp} → {cur.stp}", "🔥"))
+
+        # LTD appeared / disappeared / changed
+        if (cur.ltd or None) != (prev.ltd or None):
+            if cur.ltd and not prev.ltd:
+                changes.append(Change(cur.asin, name, "ltd",
+                                      f"*{name}* — new LTD: {cur.ltd}", "⚡"))
+            elif prev.ltd and not cur.ltd:
+                changes.append(Change(cur.asin, name, "ltd",
+                                      f"*{name}* — LTD ended ({prev.ltd})", "🏁"))
+            else:
+                changes.append(Change(cur.asin, name, "ltd",
+                                      f"*{name}* — LTD changed {prev.ltd} → {cur.ltd}", "⚡"))
 
         # Stock flip
         if cur.in_stock != prev.in_stock:
@@ -93,8 +117,10 @@ def active_promotions(today: list[Snapshot]) -> list[str]:
     out = []
     for s in today:
         name = s.product or s.asin
-        if s.deal:
-            out.append(f"🔥 {name} — {s.deal}")
+        if s.stp:
+            out.append(f"🔥 {name} — {s.stp}")
+        if s.ltd:
+            out.append(f"⚡ {name} — {s.ltd} (LTD)")
         if s.coupon:
             out.append(f"🎟️ {name} — {s.coupon} coupon")
     return out

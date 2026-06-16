@@ -292,34 +292,90 @@ def _buybox_savings_pct(soup: BeautifulSoup) -> Optional[str]:
     return None
 
 
-def parse_deal(soup: BeautifulSoup) -> Optional[str]:
-    # ── 1. Deal / promo badge ──
+def _has_ltd_badge(soup: BeautifulSoup) -> bool:
+    """True if Amazon's 'Limited time deal' badge is present on the page."""
     for sel in ["#dealBadge", ".dealBadge", "#dealBadge_feature_div",
                 "[data-feature-name='dealBadge']"]:
         el = soup.select_one(sel)
         if not el:
             continue
-        # Lightning / countdown deal: JS fills the timer with NO_OF_* placeholders
-        # before the countdown script runs. Detect by the timer element or by
-        # the placeholder text, then grab the actual % from the price area.
+        # Countdown timer elements — always mean LTD
         if el.select_one("[data-target-time], .detailpage-dealBadge-countdown-timer"):
-            pct = _buybox_savings_pct(soup)
-            return f"Limited time deal -{pct}" if pct else "Limited time deal"
-        t = _text(el)
-        if not t:
+            return True
+        # Screen-reader labels with NO_OF_* placeholders also signal LTD
+        if "NO_OF_" in el.decode_contents():
+            return True
+        if "limited time" in _text(el).lower():
+            return True
+    return False
+
+
+def parse_ltd(soup: BeautifulSoup) -> Optional[str]:
+    """Return the LTD discount % (e.g. '-27%') when a 'Limited time deal' badge
+    is present, or 'yes' if the badge is there but no % can be parsed."""
+    if not _has_ltd_badge(soup):
+        return None
+    pct = _buybox_savings_pct(soup)
+    return f"-{pct}" if pct else "yes"
+
+
+def parse_stp(soup: BeautifulSoup) -> Optional[str]:
+    """Return the strike-through price discount % for regular markdowns.
+    Returns None when the discount is driven by an LTD badge (captured in ltd)."""
+    if _has_ltd_badge(soup):
+        return None
+    # Non-LTD deal badges (e.g. Prime-exclusive, Best Deal)
+    for sel in ["#dealBadge", ".dealBadge", "#dealBadge_feature_div",
+                "[data-feature-name='dealBadge']"]:
+        el = soup.select_one(sel)
+        if not el:
             continue
-        if "limited time" in t.lower():
-            pct = _buybox_savings_pct(soup)
-            return f"Limited time deal -{pct}" if pct else "Limited time deal"
+        t = _text(el)
         m = re.search(r"-?\s?(\d+%)", t)
         if m:
             return f"-{m.group(1)}"
-
-    # ── 2. Regular buy-box markdown % (no badge, just a sale price) ──
+    # Regular buy-box markdown % (no badge, just a struck-out list price)
     pct = _buybox_savings_pct(soup)
     if pct:
         return f"-{pct}"
+    return None
 
+
+def parse_brand(soup: BeautifulSoup) -> Optional[str]:
+    # Method 1: bylineInfo — "Visit the Nike Store" or "Brand: Nike"
+    el = soup.select_one("#bylineInfo")
+    if el:
+        t = _text(el)
+        m = re.search(r"Brand[:\s]+(.+?)$", t, re.IGNORECASE)
+        if m:
+            return m.group(1).strip()
+        m = re.search(r"Visit the (.+?) Store", t, re.IGNORECASE)
+        if m:
+            return m.group(1).strip()
+        # Fallback: strip known prefixes
+        clean = re.sub(r"^(Visit the\s+|Brand:\s*|by\s+)", "", t, flags=re.IGNORECASE).strip()
+        if clean:
+            return clean
+    # Method 2: product details table <th>Brand</th> → <td>
+    for th in soup.find_all("th"):
+        if _text(th).strip().lower() == "brand":
+            td = th.find_next_sibling("td")
+            if td:
+                v = _text(td).strip()
+                if v:
+                    return v
+    # Method 3: product overview bullet (.po-brand)
+    el = soup.select_one(".po-brand .a-span9 span")
+    if el:
+        v = _text(el).strip()
+        if v:
+            return v
+    # Method 4: #brand element
+    el = soup.select_one("#brand")
+    if el:
+        v = _text(el).strip()
+        if v:
+            return v
     return None
 
 
@@ -339,6 +395,7 @@ def parse_page(asin: str, group: str, html: str) -> Snapshot:
         asin=asin,
         group=group,
         product=parse_title(soup),
+        brand=parse_brand(soup),
         price=price,
         currency=currency,
         bsr=bsr,
@@ -348,7 +405,8 @@ def parse_page(asin: str, group: str, html: str) -> Snapshot:
         rating=parse_rating(soup),
         reviews=parse_reviews(soup),
         coupon=parse_coupon(soup),
-        deal=parse_deal(soup),
+        stp=parse_stp(soup),
+        ltd=parse_ltd(soup),
         in_stock=parse_in_stock(soup),
     )
 
