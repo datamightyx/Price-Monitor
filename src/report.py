@@ -107,14 +107,16 @@ _HTML = r"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Color+Emoji&display=swap" rel="stylesheet">
 <style>
 /* ── Reset & Base ───────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: "Segoe UI", "Noto Sans", "Apple Color Emoji",
-               "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji",
-               Arial, Helvetica, sans-serif;
+  font-family: "Inter", "Noto Color Emoji", "Apple Color Emoji",
+               "Segoe UI Emoji", Arial, sans-serif;
   font-size: 9.5pt;
   color: #1e293b;
   background: #f1f5f9;
