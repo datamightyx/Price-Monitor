@@ -5,7 +5,7 @@ name: amazon-monitor
 # Adjust the line below to your local time minus the UTC offset.
 on:
   schedule:
-    - cron: "0 7 * * *"
+    - cron: "35 8 * * *"
   workflow_dispatch: {}     # lets you trigger a run manually from the Actions tab
 
 concurrency:
@@ -17,9 +17,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.2.2
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5.6.0
         with:
           python-version: "3.12"
           cache: pip
