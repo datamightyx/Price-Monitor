@@ -73,6 +73,7 @@ def _section(text: str) -> dict:
     return {"type": "section", "text": {"type": "mrkdwn", "text": text}}
 
 
+
 def build_blocks(cfg: Config, group: Group, snaps: list[Snapshot],
                  changes: list[Change]) -> list[dict]:
     today = date.today().isoformat()
@@ -139,6 +140,11 @@ def build_blocks(cfg: Config, group: Group, snaps: list[Snapshot],
 
 
 # ── sending ──────────────────────────────────────────────────────────────────
+
+def send_separator(cfg: Config) -> None:
+    """Post a visual divider between group messages."""
+    send(cfg, [_section("─" * 40)], "─" * 40)
+
 
 def send(cfg: Config, blocks: list[dict], fallback_text: str) -> None:
     token = os.getenv("SLACK_BOT_TOKEN")

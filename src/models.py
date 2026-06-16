@@ -51,7 +51,7 @@ class Snapshot:
     @property
     def date(self) -> str:
         """Calendar date (UTC) of the snapshot — the natural key for daily history."""
-        return self.fetched_at[:10]
+        return self.fetched_at[:10] if self.fetched_at else ""
 
     def to_row(self) -> dict:
         """Flat dict matching FIELDNAMES for Sheets storage."""

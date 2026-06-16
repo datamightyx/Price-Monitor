@@ -29,9 +29,11 @@ from .models import Snapshot
 
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0",
 ]
 
 CAPTCHA_MARKERS = (
@@ -401,26 +403,29 @@ class Scraper:
 
         # ── 1. Direct AJAX call (most reliable, no UI interaction needed) ──
         try:
-            status = page.evaluate(f"""async () => {{
-                const body = new URLSearchParams({{
+            status = page.evaluate(
+                """async (zipCode) => {
+                const body = new URLSearchParams({
                     locationType: 'LOCATION_INPUT',
-                    zipCode: '{zip_code}',
+                    zipCode: zipCode,
                     storeContext: 'generic',
                     deviceType: 'web',
                     pageType: 'Gateway',
                     actionSource: 'glow',
-                }});
-                const r = await fetch('/gp/delivery/ajax/address-change.html', {{
+                });
+                const r = await fetch('/gp/delivery/ajax/address-change.html', {
                     method: 'POST',
                     credentials: 'include',
-                    headers: {{
+                    headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                         'X-Requested-With': 'XMLHttpRequest',
-                    }},
+                    },
                     body: body.toString(),
-                }});
+                });
                 return r.status;
-            }}""")
+            }""",
+                zip_code,
+            )
             if status == 200:
                 print(f"  [location] zip set via AJAX -> {zip_code}")
                 return
@@ -539,10 +544,12 @@ def scrape_groups(cfg: Config) -> dict[str, list[Snapshot]]:
     with Scraper(cfg) as sc:
         for group in cfg.groups:
             snaps = []
-            for asin in group.all_asins:
+            asins = group.all_asins
+            for i, asin in enumerate(asins):
                 print(f"[{group.name}] scraping {asin} ...")
                 snaps.append(sc.scrape_asin(asin, group.name))
-                time.sleep(random.uniform(cfg.scraper.min_delay_sec,
-                                          cfg.scraper.max_delay_sec))
+                if i < len(asins) - 1:
+                    time.sleep(random.uniform(cfg.scraper.min_delay_sec,
+                                              cfg.scraper.max_delay_sec))
             results[group.name] = snaps
     return results

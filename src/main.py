@@ -26,7 +26,7 @@ if hasattr(sys.stdout, "reconfigure"):
 
 from .config import load_config
 from .diff import diff_group
-from .slack import build_blocks, send
+from .slack import build_blocks, send, send_separator
 from .storage import make_store
 
 
@@ -56,7 +56,8 @@ def run(config_path: str, dry_run: bool, demo: bool) -> int:
             print(f"[sheets] append failed (continuing): {e}")
 
     # 4. per-group diff + Slack digest
-    for group in cfg.groups:
+    groups = cfg.groups
+    for gi, group in enumerate(groups):
         snaps = results.get(group.name, [])
         if not snaps:
             continue
@@ -83,6 +84,8 @@ def run(config_path: str, dry_run: bool, demo: bool) -> int:
                 print(f"  {c.emoji} {c.text}")
         else:
             send(cfg, blocks, fallback)
+            if gi < len(groups) - 1:
+                send_separator(cfg)
 
     return 0
 

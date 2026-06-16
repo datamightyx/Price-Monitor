@@ -52,18 +52,6 @@ def diff_group(today: list[Snapshot], baseline: dict[str, Snapshot]) -> list[Cha
                 f"*{name}* — Price {arrow} {_fmt_price(prev)} → {_fmt_price(cur)} "
                 f"({pct:+.1f}%)", emoji))
 
-        # BSR (lower is better)
-        if cur.bsr is not None and prev.bsr not in (None, cur.bsr):
-            delta = cur.bsr - prev.bsr
-            better = delta < 0
-            verb = "improved" if better else "worsened"
-            emoji = "🟢" if better else "🟠"
-            pct = (delta / prev.bsr * 100) if prev.bsr else 0
-            changes.append(Change(
-                cur.asin, name, "bsr",
-                f"*{name}* — BSR {verb} #{prev.bsr:,} → #{cur.bsr:,} "
-                f"({pct:+.1f}%)", emoji))
-
         # Coupon appeared / disappeared / changed
         if (cur.coupon or None) != (prev.coupon or None):
             if cur.coupon and not prev.coupon:

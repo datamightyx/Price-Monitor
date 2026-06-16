@@ -53,7 +53,7 @@ class SheetStore:
         try:
             ws = sh.worksheet(self.cfg.worksheet)
         except gspread.WorksheetNotFound:
-            ws = sh.add_worksheet(self.cfg.worksheet, rows=1000, cols=len(FIELDNAMES))
+            ws = sh.add_worksheet(self.cfg.worksheet, rows=10000, cols=len(FIELDNAMES))
             ws.append_row(FIELDNAMES, value_input_option="RAW")
         # ensure header exists
         if not ws.row_values(1):
@@ -74,7 +74,7 @@ class SheetStore:
         for row in rows:
             d = str(row.get("date", ""))
             asin = str(row.get("asin", "")).strip()
-            if not asin or d >= today:
+            if not asin or not d or d >= today:
                 continue
             prev = baseline.get(asin)
             if prev is None or d >= prev.date:

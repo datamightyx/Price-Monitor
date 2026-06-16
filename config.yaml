@@ -9,11 +9,18 @@ language: en_US
 # One Slack digest is sent per group.
 groups:
   - name: "Blotting Sheets"
-    my_asin: B086692GCS     # your own product — highlighted with a star in the report
+    my_asin: B086692GCS     
     asins:
       - B0DQQGR9KR
       - B0FQ21P4J2
       - B0DBY7CJC8
+
+  - name: "Сast Covers"
+    my_asin: B078Q32FXQ     
+    asins:
+      - B0FMF5GRWG
+      - B0FHPN39B6
+      - B0CC24BY3T    
 
 # Scraper behaviour
 scraper:
