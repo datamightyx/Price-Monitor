@@ -4,8 +4,8 @@ name: amazon-monitor
 # 07:00 UTC ≈ 09:00 in Moldova summer (EEST, UTC+3) / 10:00 there is 08:00 UTC.
 # Adjust the line below to your local time minus the UTC offset.
 on:
-  schedule:
-    - cron: "35 8 * * *"
+  #schedule:
+    #- cron: "35 8 * * *"
   workflow_dispatch: {}     # lets you trigger a run manually from the Actions tab
 
 concurrency:
