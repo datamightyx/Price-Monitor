@@ -171,15 +171,29 @@ def parse_reviews(soup: BeautifulSoup) -> Optional[int]:
 
 
 def _parse_ranks_from_el(el) -> list[tuple[int, str]]:
-    """Extract all #N in Category pairs from a BeautifulSoup element."""
+    """Extract all #N in Category pairs from a BeautifulSoup element.
+
+    Always checks the element itself first (for the primary rank), then each
+    child <li> (for subcategory ranks).  Deduplicates so that a rank found in
+    both the parent text and a child <li> is only reported once.
+    """
     ranks: list[tuple[int, str]] = []
-    # Prefer <li> items (table-format details page)
-    items = el.select("li") or [el]
+    seen: set[tuple[int, str]] = set()
+
+    sub_lis = el.select("li")
+    # Include the element itself so the primary-category rank (which lives in
+    # the direct text of the outer <li>/<td>, not in any child <li>) is never
+    # skipped when subcategory <li> items are present.
+    items = [el] + sub_lis if sub_lis else [el]
+
     for item in items:
         m = re.search(r"#([\d,]+)\s+in\s+([^#(\n]+)", _text(item))
         if m:
-            ranks.append((int(m.group(1).replace(",", "")),
-                          m.group(2).strip().rstrip("(").strip()))
+            entry = (int(m.group(1).replace(",", "")),
+                     m.group(2).strip().rstrip("(").strip())
+            if entry not in seen:
+                seen.add(entry)
+                ranks.append(entry)
     return ranks
 
 
