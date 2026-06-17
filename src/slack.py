@@ -70,14 +70,6 @@ def _section(text: str) -> dict:
     return {"type": "section", "text": {"type": "mrkdwn", "text": text}}
 
 
-def _product_link(s: Snapshot, domain: str) -> str:
-    """Slack mrkdwn hyperlink: product name (or ASIN) pointing to the Amazon page."""
-    name = s.product or s.asin
-    url = f"https://{domain}/dp/{s.asin}?th=1"
-    return f"<{url}|{name}>"
-
-
-
 def build_blocks(cfg: Config, group: Group, snaps: list[Snapshot],
                  changes: list[Change]) -> list[dict]:
     today = date.today().isoformat()
@@ -94,7 +86,7 @@ def build_blocks(cfg: Config, group: Group, snaps: list[Snapshot],
     my_set = set(group.my_asins)
     mines = [s for s in snaps if s.asin in my_set]
     for mine in mines:
-        parts = [f"*★ My product:* {_product_link(mine, cfg.domain)} — {mine.fmt_price()}"]
+        parts = [f"*★ My product:* {mine.product or mine.asin} — {mine.fmt_price()}"]
         if mine.bsr is not None:
             parts.append(f"BSR #{mine.bsr:,}")
         if mine.rating is not None:
