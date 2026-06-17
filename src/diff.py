@@ -16,13 +16,6 @@ class Change:
     emoji: str = ""    # leading emoji
 
 
-def _fmt_price(s: Snapshot) -> str:
-    if s.price is None:
-        return "—"
-    sym = {"USD": "$", "GBP": "£", "EUR": "€"}.get(s.currency, "")
-    return f"{sym}{s.price:g}"
-
-
 def diff_group(today: list[Snapshot], baseline: dict[str, Snapshot]) -> list[Change]:
     changes: list[Change] = []
     for cur in today:
@@ -61,7 +54,7 @@ def diff_group(today: list[Snapshot], baseline: dict[str, Snapshot]) -> list[Cha
             emoji = "📉" if delta < 0 else "📈"
             changes.append(Change(
                 cur.asin, name, "price",
-                f"*{name}* — Price {arrow} {_fmt_price(prev)} → {_fmt_price(cur)} "
+                f"*{name}* — Price {arrow} {prev.fmt_price()} → {cur.fmt_price()} "
                 f"({pct:+.1f}%)", emoji))
 
         # Coupon appeared / disappeared / changed
@@ -110,17 +103,3 @@ def diff_group(today: list[Snapshot], baseline: dict[str, Snapshot]) -> list[Cha
                                       f"*{name}* — out of stock", "🚫"))
 
     return changes
-
-
-def active_promotions(today: list[Snapshot]) -> list[str]:
-    """Bullet lines describing every product currently running a promo."""
-    out = []
-    for s in today:
-        name = s.product or s.asin
-        if s.stp:
-            out.append(f"🔥 {name} — {s.stp}")
-        if s.ltd:
-            out.append(f"⚡ {name} — {s.ltd} (LTD)")
-        if s.coupon:
-            out.append(f"🎟️ {name} — {s.coupon} coupon")
-    return out

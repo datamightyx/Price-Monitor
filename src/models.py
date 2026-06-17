@@ -1,7 +1,7 @@
 """Data model for a single product snapshot."""
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict, field
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -111,5 +111,9 @@ class Snapshot:
             fetched_at=str(row.get("fetched_at") or ""),
         )
 
-    def as_dict(self) -> dict:
-        return asdict(self)
+    def fmt_price(self) -> str:
+        """Format price with currency symbol, e.g. '$9.99'. Returns '—' if no price."""
+        if self.price is None:
+            return "—"
+        sym = {"USD": "$", "GBP": "£", "EUR": "€"}.get(self.currency, "")
+        return f"{sym}{self.price:g}"

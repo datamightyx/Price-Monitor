@@ -15,7 +15,7 @@ groups:
       - B0DQQGR9KR
       - B0FQ21P4J2
       - B0DBY7CJC8
-
+ 
   - name: "Сast Covers"
     my_asins:
       - B078Q32FXQ
@@ -41,10 +41,6 @@ google_sheet:
   # Spreadsheet key (the long id in the sheet URL) OR full URL.
   spreadsheet: "1xovMWNvj4cE5h0TekMvXDUoPOVShTbV7ngQmuyYNEmI"
   worksheet: "history"
-
-# Google Drive — PDF reports are uploaded here
-google_drive:
-  folder_id: "1yg8MG-ov2UOpMaWafzuwqcAMyUOFpyV4"   # folder ID from URL; service account must be added as Editor
 
 # Cloudflare R2 — primary PDF storage (free 10 GB/month)
 # Credentials go in GitHub Secrets: R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY

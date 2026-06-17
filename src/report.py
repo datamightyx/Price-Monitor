@@ -29,13 +29,6 @@ from .models import Snapshot
 
 # ── Jinja2 filters ────────────────────────────────────────────────────────────
 
-def _f_price(s: Snapshot) -> str:
-    if s.price is None:
-        return "—"
-    sym = {"USD": "$", "GBP": "£", "EUR": "€"}.get(s.currency, "")
-    return f"{sym}{s.price:g}"
-
-
 def _f_commas(n) -> str:
     if n is None:
         return "—"
@@ -705,7 +698,7 @@ def _render_html(
         today_pretty = today
 
     env = Environment(loader=BaseLoader(), autoescape=False)
-    env.filters["price"]        = _f_price
+    env.filters["price"]        = Snapshot.fmt_price
     env.filters["commas"]       = _f_commas
     env.filters["trunc"]        = _f_trunc
     env.filters["stars"]        = _f_stars

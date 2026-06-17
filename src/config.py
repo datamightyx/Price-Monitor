@@ -68,11 +68,6 @@ class SlackCfg:
 
 
 @dataclass
-class DriveCfg:
-    folder_id: str = ""   # ID of the Drive folder to upload PDFs into (from URL); service account must have Editor access
-
-
-@dataclass
 class R2Cfg:
     bucket: str = ""        # R2 bucket name
     public_url: str = ""    # public bucket URL, e.g. https://pub-xxx.r2.dev
@@ -86,7 +81,6 @@ class Config:
     scraper: ScraperCfg = field(default_factory=ScraperCfg)
     google_sheet: SheetCfg = field(default_factory=SheetCfg)
     slack: SlackCfg = field(default_factory=SlackCfg)
-    google_drive: DriveCfg = field(default_factory=DriveCfg)
     cloudflare_r2: R2Cfg = field(default_factory=R2Cfg)
 
     @property
@@ -132,7 +126,6 @@ def load_config(path: str = "config.yaml") -> Config:
         scraper=ScraperCfg(**(raw.get("scraper") or {})),
         google_sheet=SheetCfg(**(raw.get("google_sheet") or {})),
         slack=SlackCfg(**(raw.get("slack") or {})),
-        google_drive=DriveCfg(**(raw.get("google_drive") or {})),
         cloudflare_r2=R2Cfg(**(raw.get("cloudflare_r2") or {})),
     )
     cfg.domain  # validate marketplace early

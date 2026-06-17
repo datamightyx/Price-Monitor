@@ -31,13 +31,6 @@ def _bsr_cell(s: Snapshot) -> str:
     return f"#{s.bsr:,}"
 
 
-def _price(s: Snapshot) -> str:
-    if s.price is None:
-        return "—"
-    sym = {"USD": "$", "GBP": "£", "EUR": "€"}.get(s.currency, "")
-    return f"{sym}{s.price:g}"
-
-
 def render_table(snaps: list[Snapshot], my_asins) -> str:
     """Render a monospace table. my_asins can be a str or list[str]."""
     if isinstance(my_asins, str):
@@ -52,7 +45,7 @@ def render_table(snaps: list[Snapshot], my_asins) -> str:
             s.asin,
             (s.product or "")[:26],
             (s.brand or "")[:16],
-            _price(s),
+            s.fmt_price(),
             _bsr_cell(s),
             f"{s.rating}★" if s.rating is not None else "—",
             f"{s.reviews:,}" if s.reviews is not None else "—",
@@ -101,7 +94,7 @@ def build_blocks(cfg: Config, group: Group, snaps: list[Snapshot],
     my_set = set(group.my_asins)
     mines = [s for s in snaps if s.asin in my_set]
     for mine in mines:
-        parts = [f"*★ My product:* {_product_link(mine, cfg.domain)} — {_price(mine)}"]
+        parts = [f"*★ My product:* {_product_link(mine, cfg.domain)} — {mine.fmt_price()}"]
         if mine.bsr is not None:
             parts.append(f"BSR #{mine.bsr:,}")
         if mine.rating is not None:
