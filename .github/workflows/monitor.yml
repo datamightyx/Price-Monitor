@@ -3,8 +3,8 @@ name: amazon-monitor
 # Weekly run every Monday. GitHub cron is in UTC and may start a few minutes late.
 # 11:00 Moldova summer (EEST, UTC+3) = 08:00 UTC  →  cron: "0 8 * * 1"
 on:
-  schedule:
-    - cron: "0 8 * * 1"
+  #schedule:
+    #- cron: "0 8 * * 1"
   workflow_dispatch: {}     # lets you trigger a run manually from the Actions tab
 
 concurrency:
